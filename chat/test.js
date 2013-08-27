@@ -11,7 +11,7 @@ var ioOptions ={
 };
 
 describe('Chat App', function() {
-  var client1, client2;
+  var client1, client2, client3;
 
   beforeEach(function(done) {
     client1 = io.connect(appUrl, ioOptions);
@@ -52,18 +52,37 @@ describe('Chat App', function() {
   });
 
   it('should let users create and join rooms', function(done) {
+    client2 = io.connect(appUrl, ioOptions);
+    client3 = io.connect(appUrl, ioOptions);
+
+    var calls = 0;
+    var reallyDone = function() {
+      calls++;
+      if(calls == 2) {
+        done();
+      }
+    }
+
+    // Set callback asserts
     client1.once('message', function(data) {
       assert.deepEqual(data, {text: 'yo bro'});
-      done();
+      reallyDone()
+    });
+    client2.once('message', function(data) {
+      assert.deepEqual(data, {text: 'yo bro'});
+      reallyDone()
+    });
+    client3.once('message', function(data) {
+      assert.fail(data, "", "Client 3 shouldn't receive a message. Received " + data.text, " : ");
     });
 
-    client2 = io.connect(appUrl, ioOptions);
+    // Connect to server, join rooms and send message
     client2.once('connect', function() {
       // Implicit creation when joining a non-existent room.
       client2.emit('room', 'coolpeople');
       client1.emit('room', 'coolpeople');
 
-      client2.emit('message', {text: 'yo bro'});
+      client2.emit('message', 'yo bro');
     });
   });
 });
